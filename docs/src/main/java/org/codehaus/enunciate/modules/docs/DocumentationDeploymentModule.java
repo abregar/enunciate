@@ -17,19 +17,25 @@
 package org.codehaus.enunciate.modules.docs;
 
 import com.sun.mirror.declaration.PackageDeclaration;
+
 import freemarker.ext.dom.NodeModel;
 import freemarker.template.ObjectWrapper;
 import freemarker.template.TemplateException;
+
 import net.sf.jelly.apt.Context;
 import net.sf.jelly.apt.decorations.declaration.DecoratedPackageDeclaration;
 import net.sf.jelly.apt.util.JavaDocTagHandler;
 import net.sf.jelly.apt.util.JavaDocTagHandlerFactory;
+
 import org.apache.commons.digester.RuleSet;
 import org.codehaus.enunciate.EnunciateException;
 import org.codehaus.enunciate.apt.EnunciateClasspathListener;
 import org.codehaus.enunciate.apt.EnunciateFreemarkerModel;
 import org.codehaus.enunciate.config.SchemaInfo;
 import org.codehaus.enunciate.config.WsdlInfo;
+import org.codehaus.enunciate.contract.jaxrs.Changelog;
+import org.codehaus.enunciate.contract.jaxrs.ResourceMethod;
+import org.codehaus.enunciate.contract.jaxrs.RootResource;
 import org.codehaus.enunciate.main.Artifact;
 import org.codehaus.enunciate.main.Enunciate;
 import org.codehaus.enunciate.main.FileArtifact;
@@ -48,6 +54,27 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
@@ -57,11 +84,6 @@ import javax.xml.transform.URIResolver;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.*;
-import org.codehaus.enunciate.main.BaseArtifact;
 
 /**
  * <h1>Documentation Module</h1>
@@ -205,7 +227,6 @@ public class DocumentationDeploymentModule extends FreemarkerDeploymentModule im
   private boolean includeDefaultDownloads = true;
   private boolean includeExampleXml = true;
   private boolean includeExampleJson = true;
-  private boolean includeDeprecatedFieldsInExample = true;
   private boolean forceExampleJson = false;
   private String xslt;
   private URL xsltURL;
@@ -423,24 +444,6 @@ public class DocumentationDeploymentModule extends FreemarkerDeploymentModule im
   }
 
   /**
-   * Whether to include deprecated fields in example JSON and example XML.
-   *
-   * @return Whether to include deprecated fields in example JSON and example XML.
-   */
-  public boolean isIncludeDeprecatedFieldsInExample() {
-    return includeDeprecatedFieldsInExample;
-  }
-
-  /**
-   * Whether to include deprecated fields in example JSON and example XML.
-   *
-   * @param includeDeprecatedFieldsInExample Whether to include deprecated fields in example JSON and example XML.
-   */
-  public void setIncludeDeprecatedFieldsInExample(boolean includeDeprecatedFieldsInExample) {
-    this.includeDeprecatedFieldsInExample = includeDeprecatedFieldsInExample;
-  }
-
-  /**
    * Whether to force example JSON. Default is to only include the example JSON only if Jackson is available on the classpath.
    *
    * @return Whether to force example JSON.
@@ -505,19 +508,15 @@ public class DocumentationDeploymentModule extends FreemarkerDeploymentModule im
     this.freemarkerXMLProcessingTemplateURL = freemarkerXMLProcessingTemplateURL;
   }
 
-  public String getFreemarkerDocsXMLTemplate() {
-    return freemarkerDocsXMLTemplate;
-  }
-
-  public void setFreemarkerDocsXMLTemplate(String freemarkerXmlTemplate) throws MalformedURLException {
+  public void setFreemarkerDOCSXmlTemplate(String freemarkerXmlTemplate) throws MalformedURLException {
     this.freemarkerDocsXMLTemplate = freemarkerXmlTemplate;
   }
 
-  public URL getFreemarkerDocsXMLTemplateURL() {
+  public URL getFreemarkerDOCSXmlTemplateURL() {
     return freemarkerDocsXMLTemplateURL;
   }
 
-  public void setFreemarkerDocsXMLTemplateURL(URL freemarkerDOCSXmlTemplateURL) {
+  public void setFreemarkerDOCSXmlTemplateURL(URL freemarkerDOCSXmlTemplateURL) {
     this.freemarkerDocsXMLTemplateURL = freemarkerDOCSXmlTemplateURL;
   }
 
@@ -575,6 +574,21 @@ public class DocumentationDeploymentModule extends FreemarkerDeploymentModule im
     }
     return freemarkerProcessingTemplateURL;
   }
+
+    protected URL getChangelogsTemplateURL() {
+
+        try {
+            final File file = getEnunciate().resolvePath("changelog.fmt");
+            if (file.exists()) {
+                return file.toURI().toURL();
+            }
+            warn("Custom changelog.fmt does not exists, using default one");
+        } catch (MalformedURLException e) {
+            warn("Custom changelog.fmt url malformed, using default one");
+        }
+
+        return DocumentationDeploymentModule.class.getResource("changelog.fmt");
+    }
 
   /**
    * The URL to the Freemarker template for processing the downloads xml file.
@@ -809,9 +823,9 @@ public class DocumentationDeploymentModule extends FreemarkerDeploymentModule im
       model.setVariable(JsonTypeNameForQualifiedName.NAME, new JsonTypeNameForQualifiedName(model));
       model.put("isDefinedGlobally", new IsDefinedGloballyMethod());
       model.put("includeExampleXml", isIncludeExampleXml());
-      model.put("generateExampleXml", new GenerateExampleXmlMethod(getDefaultNamespace(), model, isIncludeDeprecatedFieldsInExample()));
+      model.put("generateExampleXml", new GenerateExampleXmlMethod(getDefaultNamespace(), model));
       model.put("includeExampleJson", (forceExampleJson || (jacksonXcAvailable && isIncludeExampleJson())));
-      model.put("generateExampleJson", new GenerateExampleJsonMethod(model, isIncludeDeprecatedFieldsInExample()));
+      model.put("generateExampleJson", new GenerateExampleJsonMethod(model));
       processTemplate(getDocsTemplateURL(), model);
     }
     else {
@@ -819,7 +833,48 @@ public class DocumentationDeploymentModule extends FreemarkerDeploymentModule im
     }
   }
 
-  @Override
+    private void addProcessedChangelogs(final EnunciateFreemarkerModel model) {
+
+        Map<String, List<String>> changelogMap = new TreeMap<String, List<String>>(Collections.reverseOrder());
+
+        for (RootResource rootResource : model.getRootResources()) {
+            final List<ResourceMethod> resourceMethods = rootResource.getResourceMethods(true);
+            for (ResourceMethod resourceMethod : resourceMethods) {
+
+                String changelogMethodPart = resourceMethod.getFullpath() + " (";
+                final Set<String> httpMethods = resourceMethod.getHttpMethods();
+
+                for (String httpMethod : httpMethods) {
+                    changelogMethodPart += (" " + httpMethod);
+                }
+
+                changelogMethodPart += " )";
+
+                final List<? extends Changelog> changelogs = resourceMethod.getChangelogs();
+                for (Changelog changelog : changelogs) {
+                    final int version = changelog.getVersion();
+                    final String key = String.valueOf(version);
+                    List<String> strings = null;
+                    if (changelogMap.containsKey(key)) {
+                        strings = changelogMap.get(key);
+                    } else {
+                        strings = new ArrayList<String>();
+                        changelogMap.put(key, strings);
+                    }
+
+                    final String finalChangelogString = changelogMethodPart + " " + changelog.getDescription();
+
+                    strings.add(finalChangelogString);
+                }
+            }
+
+        }
+
+        model.put("changelogs", changelogMap);
+
+    }
+
+    @Override
   protected void doBuild() throws EnunciateException, IOException {
     if (!getEnunciate().isUpToDateWithSources(getBuildDir())) {
       buildBase();
@@ -1087,6 +1142,9 @@ public class DocumentationDeploymentModule extends FreemarkerDeploymentModule im
     model.put("additionalCss", getAdditionalCss());
     try {
       processTemplate(freemarkerXMLProcessingTemplateURL, model);
+
+      addProcessedChangelogs(model);
+      processTemplate(getChangelogsTemplateURL(), model);
     }
     catch (TemplateException e) {
       throw new EnunciateException(e);

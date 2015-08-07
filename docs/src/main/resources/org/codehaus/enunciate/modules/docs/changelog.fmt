@@ -1,0 +1,26 @@
+[#ftl]
+[@file name="changelog.html" charset="utf-8" ]
+
+<html lang="en">
+
+<body>
+
+<h2>Changelog</h2>
+
+    [#list changelogs?keys as version]
+
+    <h4>Version ${version}</h4>
+
+    <ul>
+        [#list changelogs[version] as chgString]
+            <li>
+            ${chgString}
+            </li>
+        [/#list]
+    </ul>
+    [/#list]
+
+</body>
+</html>
+
+[/@file]

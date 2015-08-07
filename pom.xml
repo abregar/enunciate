@@ -4,35 +4,8 @@
   <groupId>org.codehaus.enunciate</groupId>
   <artifactId>enunciate-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.30-SNAPSHOT</version>
+  <version>1.29.a3</version>
   <name>Enunciate - Parent</name>
-  <description>Build tool for decorating your Java Web service API.</description>
-  <url>http://enunciate.codehaus.org</url>
-
-  <parent>
-    <groupId>org.codehaus</groupId>
-    <artifactId>codehaus-parent</artifactId>
-    <version>4</version>
-  </parent>
-
-  <developers>
-    <developer>
-      <name>Ryan Heaton</name>
-    </developer>
-  </developers>
-
-  <scm>
-    <connection>scm:git:git@github.com:stoicflame/enunciate.git</connection>
-    <url>https://github.com/stoicflame/enunciate</url>
-    <developerConnection>scm:git:git@github.com:stoicflame/enunciate.git</developerConnection>
-  </scm>
-
-  <licenses>
-    <license>
-      <name>Apache 2</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-  </licenses>
 
   <modules>
     <module>core-annotations</module>
@@ -179,7 +152,8 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
+      <!--
+	  <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>1.2</version>
@@ -204,6 +178,7 @@
           </execution>
         </executions>
       </plugin>
+	-->
     </plugins>
     <pluginManagement>
       <plugins>
@@ -232,6 +207,12 @@
       </plugin>
     </plugins>
   </reporting>
+
+  <scm>
+	  <connection>scm:git:git@github.com:stoicflame/enunciate.git</connection>
+	  <url>scm:git:git@github.com:stoicflame/enunciate.git</url>
+	  <developerConnection>scm:git:git@github.com:stoicflame/enunciate.git</developerConnection>
+  </scm>
 
   <dependencies>
     <dependency>
@@ -369,62 +350,20 @@
     </pluginRepository>
   </pluginRepositories>
 
-  <profiles>
-    <profile>
-      <id>release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>1.6.5</version>
-            <extensions>true</extensions>
-            <configuration>
-              <serverId>ossrh</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-              <autoReleaseAfterClose>true</autoReleaseAfterClose>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.10.1</version>
-            <executions>
-              <execution>
-                <id>attach-javadocs</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-      <distributionManagement>
-        <snapshotRepository>
-          <id>ossrh</id>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-          <id>ossrh</id>
-          <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-      </distributionManagement>
-    </profile>
-  </profiles>
+  <distributionManagement>
+
+    <repository>
+      <id>nexus</id>
+      <name>Enunciate Central Repository</name>
+      <url>http://192.168.214.3:8081/nexus/content/repositories/thirdparty</url>
+    </repository>
+
+    <snapshotRepository>
+      <id>codehaus.org</id>
+      <name>Enunciate Central Development Repository</name>
+      <url>dav:https://dav.codehaus.org/snapshots.repository/enunciate/</url>
+    </snapshotRepository>
+
+  </distributionManagement>
 
 </project>

@@ -634,6 +634,7 @@
           <xs:element name="parameter" type="restParameter" minOccurs="0" maxOccurs="unbounded"/>
           <xs:element name="inValue" type="entity" minOccurs="0" maxOccurs="1"/>
           <xs:element name="outValue" type="entity" minOccurs="0" maxOccurs="1"/>
+          <xs:element name="cached" type="xs:string" minOccurs="0" maxOccurs="1"/>
           <xs:element name="statusCode" type="restStatusCode" minOccurs="0" maxOccurs="unbounded"/>
           <xs:element name="warning" type="restStatusCode" minOccurs="0" maxOccurs="unbounded"/>
           <xs:element name="responseHeader" type="responseHeader" minOccurs="0" maxOccurs="unbounded"/>

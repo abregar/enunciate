@@ -63,6 +63,8 @@ public class ResourceMethod extends DecoratedMethodDeclaration implements HasFac
   private final Map<String, Object> metaData = new HashMap<String, Object>();
   private final List<? extends ResponseCode> statusCodes;
   private final List<? extends ResponseCode> warnings;
+  private final List<? extends Changelog> changelogs;
+  private final String cached;
   private final Map<String, String> responseHeaders = new HashMap<String, String>();
   private final ResourceRepresentationMetadata representationMetadata;
   private final Set<Facet> facets = new TreeSet<Facet>();
@@ -73,14 +75,21 @@ public class ResourceMethod extends DecoratedMethodDeclaration implements HasFac
 
     Set<String> httpMethods = new TreeSet<String>();
     Collection<AnnotationMirror> mirrors = delegate.getAnnotationMirrors();
-    for (AnnotationMirror mirror : mirrors) {
-      AnnotationTypeDeclaration annotationDeclaration = mirror.getAnnotationType().getDeclaration();
-      HttpMethod httpMethodInfo = annotationDeclaration.getAnnotation(HttpMethod.class);
-      if (httpMethodInfo != null) {
-        //request method designator found.
-        httpMethods.add(httpMethodInfo.value());
+
+      boolean isCached=false;
+      for (AnnotationMirror mirror : mirrors) {
+          AnnotationTypeDeclaration annotationDeclaration = mirror.getAnnotationType().getDeclaration();
+          HttpMethod httpMethodInfo = annotationDeclaration.getAnnotation(HttpMethod.class);
+          if (httpMethodInfo != null) {
+              //request method designator found.
+              httpMethods.add(httpMethodInfo.value());
+          }
+
+          // simple way to check non-enunciate annotation for required cached data
+          if (annotationDeclaration.getSimpleName().equals("Cached")) {
+              isCached = true;
+          }
       }
-    }
 
     if (httpMethods.isEmpty()) {
       throw new IllegalStateException("A resource method must specify an HTTP method by using a request method designator annotation.");
@@ -327,6 +336,29 @@ public class ResourceMethod extends DecoratedMethodDeclaration implements HasFac
       }
     }
 
+    // changelogs
+    ArrayList<Changelog> changelogs = new ArrayList<Changelog>();
+
+    Changelogs changelogInfo = getAnnotation(Changelogs.class);
+    if (changelogInfo != null) {
+      for (org.codehaus.enunciate.jaxrs.Changelog code : changelogInfo.value()) {
+        Changelog changelog = new Changelog();
+        changelog.setVersion(code.version());
+        changelog.setDescription(code.description());
+        changelogs.add(changelog);
+      }
+    }
+
+    changelogInfo = parent.getAnnotation(Changelogs.class);
+    if (changelogInfo != null) {
+      for (org.codehaus.enunciate.jaxrs.Changelog code : changelogInfo.value()) {
+        Changelog changelog = new Changelog();
+        changelog.setVersion(code.version());
+        changelog.setDescription(code.description());
+        changelogs.add(changelog);
+      }
+    }
+
     this.additionalHeaderLabels = additionalHeaderLabels;
     this.entityParameter = entityParameter;
     this.resourceParameters = resourceParameters;
@@ -339,6 +371,8 @@ public class ResourceMethod extends DecoratedMethodDeclaration implements HasFac
     this.parent = parent;
     this.statusCodes = statusCodes;
     this.warnings = warnings;
+    this.changelogs = changelogs;
+    this.cached = isCached ? "cached":null;
     this.representationMetadata = outputPayload;
     this.declaredEntityParameters = declaredEntityParameters;
     this.facets.addAll(Facet.gatherFacets(delegate));
@@ -761,6 +795,18 @@ public class ResourceMethod extends DecoratedMethodDeclaration implements HasFac
   }
 
   /**
+   * The potential changelog
+   * @return The potential changelog
+   */
+  public List<? extends Changelog> getChangelogs() {
+    return this.changelogs;
+  }
+
+  public String getCached() {
+    return cached;
+  }
+
+    /**
    * The metadata associated with this resource.
    *
    * @return The metadata associated with this resource.

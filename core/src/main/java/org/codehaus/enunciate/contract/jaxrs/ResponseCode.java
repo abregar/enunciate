@@ -53,6 +53,10 @@ public class ResponseCode {
       this.additionalHeaders.put(key, value);
   }
 
+  public String getNonHttpCodeString (){
+      return String.valueOf(code);
+  }
+
   public String getCodeString (){
       String codeString = this.code + " ";
       switch(code){
