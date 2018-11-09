@@ -80,7 +80,7 @@ public class SyntaxImpl implements Syntax, Namespace {
       mediaType = "application/json";
     }
 
-    if (mediaType.endsWith("/json") || mediaType.endsWith("+json")) {
+    if (mediaType.contains("/json") || mediaType.contains("+json")) {
       typeMirror = this.context.resolveSyntheticType(typeMirror);
       DataTypeReference typeReference = findDataTypeReference(typeMirror);
       return typeReference == null ? null : new MediaTypeDescriptorImpl(mediaType, typeReference);

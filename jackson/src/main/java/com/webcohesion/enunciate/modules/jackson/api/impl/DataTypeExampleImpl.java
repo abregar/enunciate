@@ -444,7 +444,11 @@ public class DataTypeExampleImpl extends ExampleImpl {
         int firstSpace = JavaDoc.indexOfFirstWhitespace(specifiedExample);
         if (firstSpace >= 0) {
           key1Example = specifiedExample.substring(0, firstSpace);
-          specifiedExample = specifiedExample.substring(firstSpace + 1).trim();
+          try {
+            specifiedExample = specifiedExample.substring(firstSpace + 1).trim();
+          } catch (StringIndexOutOfBoundsException e) {
+            // do nothing, keep original string
+          }
           if (specifiedExample.isEmpty()) {
             specifiedExample = null;
           }
@@ -456,7 +460,11 @@ public class DataTypeExampleImpl extends ExampleImpl {
         int firstSpace = JavaDoc.indexOfFirstWhitespace(specifiedExample2);
         if (firstSpace >= 0) {
           key2Example = specifiedExample2.substring(0, firstSpace);
-          specifiedExample2 = specifiedExample2.substring(firstSpace + 1).trim();
+          try {
+            specifiedExample2 = specifiedExample2.substring(firstSpace + 1).trim();
+          } catch (StringIndexOutOfBoundsException e) {
+            // do nothing, keep original string
+          }
           if (specifiedExample2.isEmpty()) {
             specifiedExample2 = null;
           }

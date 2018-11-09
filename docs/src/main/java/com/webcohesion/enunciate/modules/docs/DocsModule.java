@@ -20,7 +20,11 @@ import com.webcohesion.enunciate.EnunciateException;
 import com.webcohesion.enunciate.api.*;
 import com.webcohesion.enunciate.api.datatype.Namespace;
 import com.webcohesion.enunciate.api.datatype.Syntax;
+import com.webcohesion.enunciate.api.resources.Method;
+import com.webcohesion.enunciate.api.resources.ResChangelog;
+import com.webcohesion.enunciate.api.resources.Resource;
 import com.webcohesion.enunciate.api.resources.ResourceApi;
+import com.webcohesion.enunciate.api.resources.ResourceGroup;
 import com.webcohesion.enunciate.api.services.ServiceApi;
 import com.webcohesion.enunciate.api.services.ServiceGroup;
 import com.webcohesion.enunciate.artifacts.Artifact;
@@ -259,6 +263,13 @@ public class DocsModule extends BasicGeneratingModule implements ApiRegistryAwar
           model.put("apiDoc", intro);
         }
 
+        model.put("projectVersion", enunciate.getConfiguration().getVersion());
+
+        final String terms = enunciate.getConfiguration().getTerms();
+        if (terms != null) {
+          model.put("termsOfService", terms);
+        }
+
         String copyright = this.enunciate.getConfiguration().getCopyright();
         if (copyright != null) {
           model.put("copyright", copyright);
@@ -290,11 +301,42 @@ public class DocsModule extends BasicGeneratingModule implements ApiRegistryAwar
         }
         model.put("data", syntaxes);
 
+        Map<String, List<String>> changelogMap = new TreeMap<String, List<String>>(Collections.reverseOrder());
         for (ResourceApi resourceApi : resourceApis) {
           if (resourceApi.getWadlFile() != null) {
             resourceApi.getWadlFile().writeTo(docsDir);
           }
+
+          final List<ResourceGroup> resourceGroups = resourceApi.getResourceGroups();
+          for (ResourceGroup resourceGroup : resourceGroups) {
+            final List<Resource> resources = resourceGroup.getResources();
+            for (Resource resource : resources) {
+              final List<? extends Method> methods = resource.getMethods();
+              for (Method method : methods) {
+
+                String changelogMethodPart = method.getResource().getPath() + " (" + (" " + method.getHttpMethod()) +
+                    " )";
+
+                final List<? extends ResChangelog> changelogs = method.getChangelogs();
+                for (ResChangelog changelog : changelogs) {
+                  final int version = changelog.getVersion();
+                  final String key = String.valueOf(version);
+                  List<String> strings;
+                  if (changelogMap.containsKey(key)) {
+                    strings = changelogMap.get(key);
+                  } else {
+                    strings = new ArrayList<>();
+                    changelogMap.put(key, strings);
+                  }
+                  final String finalChangelogString = changelogMethodPart + " " + changelog.getDescription();
+                  strings.add(finalChangelogString);
+                }
+              }
+            }
+          }
         }
+
+        model.put("changelogs", changelogMap);
         model.put("resourceApis", resourceApis);
 
         ApiRegistrationContext swaggerRegistrationContext = new DefaultRegistrationContext();

@@ -64,6 +64,10 @@ public interface Method extends HasStyles, HasAnnotations, HasFacets {
 
   List<? extends StatusCode> getWarnings();
 
+  List<? extends ResChangelog> getChangelogs();
+
+  String getCached();
+
   List<? extends Parameter> getResponseHeaders();
 
   Set<String> getSecurityRoles();

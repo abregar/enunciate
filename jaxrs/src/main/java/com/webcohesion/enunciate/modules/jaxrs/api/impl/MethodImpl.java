@@ -179,6 +179,21 @@ public class MethodImpl implements Method {
   }
 
   @Override
+  public List<? extends ResChangelog> getChangelogs(){
+    ArrayList<ResChangelog> changelogs = new ArrayList<ResChangelog>();
+    for (Changelog changelog : this.resourceMethod.getChangelogs()) {
+      changelogs.add(new ResChangelogImpl(changelog.getVersion(), changelog.getDescription()));
+    }
+    return changelogs;
+  }
+
+  @Override
+  public String getCached() {
+    final String cached = this.resourceMethod.getCached();
+    return cached;
+  }
+
+  @Override
   public List<? extends Parameter> getResponseHeaders() {
     Map<String, String> responseHeaders = this.resourceMethod.getResponseHeaders();
     ArrayList<Parameter> headerValues = new ArrayList<Parameter>();

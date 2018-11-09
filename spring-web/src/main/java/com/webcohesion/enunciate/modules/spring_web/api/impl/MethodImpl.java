@@ -173,6 +173,18 @@ public class MethodImpl implements Method {
   }
 
   @Override
+  public List<? extends ResChangelog> getChangelogs(){
+    // not implemented
+    return new ArrayList<ResChangelog>();
+  }
+
+  @Override
+  public String getCached() {
+    // not implemented
+    return null;
+  }
+
+  @Override
   public List<? extends Parameter> getResponseHeaders() {
     Map<String, String> responseHeaders = this.requestMapping.getResponseHeaders();
     ArrayList<Parameter> headerValues = new ArrayList<Parameter>();

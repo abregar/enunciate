@@ -76,6 +76,8 @@ public class ResourceMethod extends DecoratedExecutableElement implements HasFac
   private final Map<String, Object> metaData = new HashMap<String, Object>();
   private final List<? extends ResponseCode> statusCodes;
   private final List<? extends ResponseCode> warnings;
+  private final List<? extends Changelog> changelogs;
+  private final String cached;
   private final Map<String, String> responseHeaders;
   private final ResourceRepresentationMetadata representationMetadata;
   private final Set<Facet> facets = new TreeSet<Facet>();
@@ -86,6 +88,8 @@ public class ResourceMethod extends DecoratedExecutableElement implements HasFac
     this.context = context;
 
     Set<String> httpMethods = loadHttpMethods(delegate);
+
+    final boolean methodCached = isMethodCached(delegate);
 
     if (httpMethods.isEmpty()) {
       throw new IllegalStateException("A resource method must specify an HTTP method by using a request method designator annotation.");
@@ -160,6 +164,21 @@ public class ResourceMethod extends DecoratedExecutableElement implements HasFac
 
     resourceParameters.addAll(loadExtraParameters(parent, context));
 
+    // changelogs
+    ArrayList<Changelog> changelogs = new ArrayList<Changelog>();
+    Changelogs changelogInfo = getAnnotation(Changelogs.class);
+    if (changelogInfo != null) {
+      for (com.webcohesion.enunciate.metadata.rs.Changelog changelog : changelogInfo.value()) {
+        changelogs.add(new Changelog(changelog.version(), changelog.description()));
+      }
+    }
+    changelogInfo = parent.getAnnotation(Changelogs.class);
+    if (changelogInfo != null) {
+      for (com.webcohesion.enunciate.metadata.rs.Changelog changelog : changelogInfo.value()) {
+        changelogs.add(new Changelog(changelog.version(), changelog.description()));
+      }
+    }
+
     this.entityParameter = entityParameter;
     this.resourceParameters = resourceParameters;
     this.subpath = subpath;
@@ -168,6 +187,8 @@ public class ResourceMethod extends DecoratedExecutableElement implements HasFac
     this.parent = parent;
     this.statusCodes = loadStatusCodes(parent);
     this.warnings = loadWarnings(parent);
+    this.changelogs = changelogs;
+    this.cached = methodCached ? "cached" : null;
     this.representationMetadata = outputPayload;
     this.facets.addAll(Facet.gatherFacets(delegate, context.getContext()));
     this.facets.addAll(parent.getFacets());
@@ -193,6 +214,19 @@ public class ResourceMethod extends DecoratedExecutableElement implements HasFac
       httpMethods.add(apiOperation.httpMethod());
     }
     return httpMethods;
+  }
+
+  protected boolean isMethodCached(ExecutableElement delegate){
+    List<? extends AnnotationMirror> mirrors = delegate.getAnnotationMirrors();
+    boolean cached = false;
+    for (AnnotationMirror mirror : mirrors) {
+      Element annotationDeclaration = mirror.getAnnotationType().asElement();
+      // simple way to check non-enunciate annotation for required cached data
+      if (annotationDeclaration.getSimpleName().toString().equals("Cached")) {
+        cached = true;
+      }
+    }
+    return cached;
   }
 
   public Map<String, String> loadResponseHeaders(Resource parent) {
@@ -844,6 +878,19 @@ public class ResourceMethod extends DecoratedExecutableElement implements HasFac
    */
   public List<? extends ResponseCode> getWarnings() {
     return this.warnings;
+  }
+
+  /**
+   * The potential changelog
+   *
+   * @return The potential changelog
+   */
+  public List<? extends Changelog> getChangelogs() {
+    return this.changelogs;
+  }
+
+  public String getCached() {
+    return cached;
   }
 
   /**
